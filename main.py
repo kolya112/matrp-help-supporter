@@ -1,23 +1,28 @@
 import os
 import keyboard
 import threading
-import ahk
 import requests
-
-AHK = ahk.AHK()
+from pynput import keyboard as kb
+import pyautogui as pag
+import pyperclip as cb
 
 global _version
-_version = "1.0.0"
+_version = "1.1.0"
 
 # Если 0 - хуки клавиш деактивированы, 1 - хуки клавиш активированы
 global hookEnable
 hookEnable = 0
+# Счётчик ответов на сообщения
 global answers
 answers = 0
+# Массив с записанными строками
+global _hotStrings
+_hotStrings = { }
 
 def checkUpdates():
     global _version
-    serverVersion = requests.get("https://api.unkov.su/matrp/matrp-help-supporter/version.php").text.translate({ord("\n") : None})
+    #serverVersion = requests.get("https://api.unkov.su/matrp/matrp-help-supporter/version.php").text.translate({ord("\n") : None})
+    serverVersion = requests.get("https://api.unkov.su/matrp/matrp-help-supporter/test_version.php").text.translate({ord("\n"): None})
 
     if (_version != serverVersion):
         input("Версия скрипта устарела, для автоматического обновления скрипта откройте файл 'updater.exe' из директории, где исполняется эта программа")
@@ -26,7 +31,9 @@ def checkUpdates():
 def registerHotString(name, content):
     nameStr = str(name)
     contentStr = str(content)
-    AHK.add_hotstring(nameStr.encode().decode("cp1251"), contentStr.encode().decode("utf-8"))
+    global _hotStrings
+    _hotStrings.update({nameStr : contentStr})
+    #AHK.add_hotstring(nameStr.encode().decode("cp1251"), contentStr.encode().decode("utf-8"))
 
 class commandThread (threading.Thread):
    def __init__(self, name, counter):
@@ -50,21 +57,24 @@ class hookRegisterThread (threading.Thread):
 
 def commandHandler():
     global answers
+    global _hotStrings
     while True:
         a = input("# ")
         match(a):
+            case 'test':
+                print(_hotStrings)
             case "forumnoform":
-                AHK.set_clipboard("Здравствуйте, не по форме")
+                #AHK.set_clipboard("Здравствуйте, не по форме")
                 print("OK")
             case "forumtransfertodev":
-                AHK.set_clipboard("Здравствуйте, передано разработчикам")
+                #AHK.set_clipboard("Здравствуйте, передано разработчикам")
                 print("OK")
             case "+":
                 answers+=1
             case "-":
                 answers-=1
             case "?":
-                print("Отвечено:", answers, ". Всё хуйня, давай по-новой")
+                print("Отвечено на: ", answers, " обращений")
             case "--":
                 answers = 0
                 print("Счётчик отвеченных сообщений сброшен")
@@ -82,6 +92,55 @@ def backspace():
 
 def enter():
     keyboard.press("enter")
+
+def on_press(key):
+    try:
+        global _hotStrings
+        # Получаем нажатую клавишу в виде строки
+        key = str(key).strip("'")
+        # Если нажата клавиша Enter
+        if key == 'Key.enter':
+            # Запоминаем то, что было в буфере обмена до этого
+            backspace()
+            oldClipBoardText = cb.paste()
+            # Получаем текст из активного поля
+            kb.Controller().press(kb.Key.ctrl_l)
+            kb.Controller().press('a')
+            kb.Controller().release('a')
+            kb.Controller().release(kb.Key.ctrl_l)
+            kb.Controller().press(kb.Key.ctrl_l)
+            kb.Controller().press('c')
+            kb.Controller().release('c')
+            kb.Controller().release(kb.Key.ctrl_l)
+            print("Текст: ", cb.paste())
+            backspace()
+            backspace()
+            text = cb.paste()
+            print("Текст: ", text)
+
+            #text = text + kb.Controller().press(kb.Key.ctrl_l) + kb.Controller().press('v') + kb.Controller().release('v') + kb.Controller().release(kb.Key.ctrl_l)
+            # Проверяем, есть ли среди команд введенный текст
+            if text in _hotStrings:
+                print("YES")
+                # Получаем соответствующий текст из словаря
+                new_text = _hotStrings[text]
+                # Возвращаем старый текст в буфер обмена
+                cb.copy(oldClipBoardText)
+                # Удаляем введенный текст из поля ввода
+                kb.Controller().press(kb.Key.ctrl_l)
+                kb.Controller().press('a')
+                kb.Controller().release('a')
+                kb.Controller().release(kb.Key.ctrl_l)
+                #backspace()
+                backspace()
+                # Вставляем новый текст
+                kb.Controller().type(new_text)
+            else:
+                print("NO")
+                # Возвращаем старый текст в буфер обмена
+                cb.copy(oldClipBoardText)
+    except AttributeError:
+        print('special key {0} pressed'.format(key))
 
 # Обработчик нажатых клавиш клавиатуры
 def handler_pressed_keys(e):
@@ -204,16 +263,20 @@ registerHotString("/подтверждение", "Здравствуйте, ес
 registerHotString("/ресурсы", "Здравствуйте, все официальные ресурсы нашего проекта: официальное сообщество во ВКонтакте: https://vk.com/russian_mobile. Блог разработчиков: https://vk.com/matrp_dev. Техническая поддержка: https://vk.com/matrp_help. Сообщество МАТРЁШКИ MEDIA: https://vk.com/matrp_media. Официальный форум проекта: forum.matrp.ru. Сайт: matrp.ru. Прочие сайты на субдоменах домена matrp.ru. Больше никаких сообществ и сайтов не существует.")
 
 # Регистрируем и стартуем написанную ранее хрень
-AHK.start_hotkeys()
+#AHK.start_hotkeys()
+# Создаем слушателя клавиатуры
+listener = kb.Listener(on_press=on_press)
 
 print("> Инициализация Hotstrings... OK")
 
 # Запускаем потоки скрипта
 thread1.start()
 thread2.start()
+listener.start()
 
 thread1.join()
 thread2.join()
+listener.join()
 
 # Выполняется после завершения работы всех потоков скрипта
 print("Скрипт завершает работу")
