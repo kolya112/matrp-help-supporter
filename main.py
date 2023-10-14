@@ -15,13 +15,12 @@ hookEnable = 0
 global answers
 answers = 0
 
-# Апдейтер очень сырой
 def checkUpdates():
     global _version
-    serverVersion = requests.get("https://dl.klysrvs.ml/api/matrp/matrp-help-supporter/version.php").text.translate({ord("\n") : None})
+    serverVersion = requests.get("https://api.unkov.su/matrp/matrp-help-supporter/version.php").text.translate({ord("\n") : None})
 
     if (_version != serverVersion):
-        os.startfile(os.getcwd() + "\\updater.exe")
+        input("Версия скрипта устарела, для автоматического обновления скрипта откройте файл 'updater.exe' из директории, где исполняется эта программа")
         exit(-1)
 
 def registerHotString(name, content):
@@ -72,7 +71,7 @@ def commandHandler():
             case "help":
                 print("Команды: '+' прибавить 1 к счётчику, '-' убавить 1 у счётчика, '?' - сколько отвечено сообщений, '--' - обнулить счётчик отвеченных сообщений, 'forumnoform' - скопировать сообщение 'не по форме' в буфер обмена, 'forumtransfertodev' - скопировать сообщение 'передано разработчикам' в буфер обмена")
             case _:
-                print("Команда не найдена, заебал")
+                print("Команда не найдена. Для получения помощи по командам воспользуйтесь командой 'help'")
 
 def hookRegister():
     keyboard.hook(handler_pressed_keys)
@@ -157,9 +156,10 @@ def handler_pressed_keys(e):
 
     #print("[DEBUG]", e, e.event_type, e.name)
 
-print("Скрипт помощи техническим администраторам Матрешки запущен. Для помощи в командах воспользуйтесь: 'help'")
+print("Скрипт для помощи техническим администраторам Матрешки в их нелёгкой работе запущен. Для помощи в командах воспользуйтесь: 'help'")
 print("Версия:", _version)
 print("Автор: isNIKOLAY (Николай Юрченко). VK: @kolya112")
+print("Powered by https://unkov.su/")
 print("Проект распростроняется под лицензией MIT. GitHub: github.com/kolya112/matrp-help-supporter")
 
 #checkUpdates()

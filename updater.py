@@ -19,9 +19,9 @@ if (os.path.exists(os.getcwd() + "\\matrp-help-supporter.exe") and os.path.isfil
 
 print("Начало скачивания файла скрипта")
 
-response = requests.get("https://dl.klysrvs.ml/api/matrp/matrp-help-supporter/matrp-help-supporter.exe", stream=True)
+response = requests.get("https://cdn.unkov.su/matrp/matrp-help-supporter/matrp-help-supporter.exe", stream=True)
 open(os.getcwd() + "matrp-help-supporter.exe", "wb").write(response.content)
 
 os.startfile(os.getcwd() + "\\matrp-help-supporter.exe")
 
-exit(-1)
+input("Нажмите любую клавишу для завершения работы скрипта...")
